@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, Request
-from httpx import request
+from fastapi import APIRouter, Depends
+
 from app.dependencies.company import get_company
 from app.services.callModel import ChatService
-from uuid import uuid4
+from app.models.chat import ChatMessage
+from app.services.session_management import create_new_session, get_chat_from_session, add_message_to_session
+
+
 
 router = APIRouter(
     prefix="/chat",
@@ -11,22 +14,16 @@ router = APIRouter(
 )
 
 chat = ChatService()
-#TODO: Later move to redis
-sessions = {}
+
 
 @router.get("/new")
 async def create_new_chat():
-    chat_id = str(uuid4())
-    sessions[chat_id] = [{"role": "system", "content": "You are a helpful assistant"}]
-    return {"chat_id": chat_id}
+    return create_new_session()
+
 
 @router.post("/{chat_id}")
-async def get_chat(chat_id: str, request: Request):
-    if chat_id not in sessions:
-        return {"error": "Chat session not found"}
-    data = await request.json()
-    user_message = data.get("message")
-    sessions[chat_id].append({"role": "user", "content": user_message})
-    response = await chat.chat(sessions[chat_id])
-
+async def get_chat(chat_id: str, body: ChatMessage):
+    if add_message_to_session(chat_id, "user", body.content) is False:
+        return {"error": "Failed to add message to session"}
+    response = await chat.chat(get_chat_from_session(chat_id))
     return {"message": response}

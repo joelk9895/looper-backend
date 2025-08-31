@@ -9,12 +9,12 @@ class ChatService:
             api_key=settings.OPENROUTER_API_KEY,
         )
 
-    async def chat(self, messages: List[Dict[str, str]], model: str = "openai/gpt-4o") -> str:
+    async def chat(self, messages: List[Dict[str, str]], model: str = "openai/gpt-oss-120b:free") -> str:
         """
         Send a list of messages to the model and return the response.
         messages: [{"role": "system"|"user"|"assistant", "content": "..."}]
         """
-        completion = await self.client.chat.completions.create(
+        completion =  self.client.chat.completions.create(
             model=model,
             messages=messages
         )
